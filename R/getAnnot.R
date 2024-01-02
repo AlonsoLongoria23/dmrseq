@@ -127,6 +127,8 @@ getAnnot <- function(genomeName) {
 
             if(genomeName == "Dpulex"){
                 cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
+            } else if(genomeName == "ArcticDpulicaria"){
+                cpg$type <- substr(cpg$type, 22, nchar(cpg$type))
             } else{
                 cpg$type <- substr(cpg$type, 10, nchar(cpg$type))
             }
