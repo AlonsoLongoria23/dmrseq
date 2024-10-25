@@ -2,7 +2,7 @@ Package: dmrseq
 Type: Package
 Title: Detection and inference of differentially methylated regions 
   from Whole Genome Bisulfite Sequencing 
-Version: 1.15.1
+Version: 1.25.2
 Authors@R: c(person("Keegan", "Korthauer", role = c("cre", "aut"), 
                     email = "keegan@stat.ubc.ca", 
                     comment = c(ORCID = "0000-0002-4565-1654")),
@@ -47,10 +47,12 @@ Imports: GenomicRanges,
   splines
 Suggests: knitr, 
   rmarkdown, 
-  BiocStyle
+  BiocStyle,
+  TxDb.Hsapiens.UCSC.hg19.knownGene,
+  org.Hs.eg.db
 biocViews: ImmunoOncology, DNAMethylation, Epigenetics, MultipleComparison, Software,
   Sequencing, DifferentialMethylation, WholeGenome, Regression, 
   FunctionalGenomics
 LazyData: true
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.2.3
