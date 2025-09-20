@@ -125,11 +125,12 @@ getAnnot <- function(genomeName) {
            
             keep <- which(!is.na(genes$symbol))
             genes <- genes[keep, ]
-
             if(genomeName == "Dpulex"){
-                cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
-            } else{
-                cpg$type <- substr(cpg$type, 10, nchar(cpg$type))
+            cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
+            } else if(genomeName == "Tthymallus"){
+            cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
+            } else {
+            cpg$type <- substr(cpg$type, 10, nchar(cpg$type))
             }
             
             annot <- GRangesList(CpGs = cpg, Exons = genes, compress=FALSE)
