@@ -41,102 +41,47 @@ getAnnot <- function(genomeName) {
     requireNamespace("annotatr")
     liftTo <- NULL
     if(genomeName == 'hg18'){
-        message("Genome ", genomeName, " will be built by lifting over ",
-                "hg19 annotations from annotatr")
+        message("Genome ", genomeName, " will be built by lifting over hg19 annotations")
         liftTo <- 'hg18'
         genomeName <- 'hg19'
-    }else if (!genomeName %in% annotatr::builtin_genomes()) {
-        message("Genome ", genomeName, " is not supported by ", 
-                       "annotatr at this time")
+    } else if (!genomeName %in% c(annotatr::builtin_genomes(), "Tthymallus", "ThyArc1.0")) {
+        message("Genome ", genomeName, " is not supported by annotatr or custom Grayling scripts")
         return(NULL)
     }
     
     if (is.null(genomeName)) {
         return(NULL)
     } else {
-        annot_CpG <- paste0(c(genomeName, "_cpgs"), collapse = "")
-        annot_genes <- paste0(c(genomeName, "_genes_cds"), collapse = "")
-        
-        # Build the annotations (a single GRanges object)
-        
-        # annotatr downloads files for genomes that aren't natively supported
-        # (e.g. hg38)
-        # Download has a nonzero fail rate; allow up to 5 retries before 
-        # throwing an error
-        
-        for (attempt in seq_len(5)) {
-            cpg <- try(annotatr::build_annotations(genome = genomeName, 
-                                          annotations = annot_CpG), 
-                silent = TRUE)
-            if (!is(cpg, "try-error")) {
-                message("Download of CpG annotation successful!")
-                fail1 <- 0
-                break
-            } else {
-                message(cpg)
-                if (5 - attempt > 0)
-                  message("Trying again (", 5 - attempt, " attempts remaining)")
-                fail1 <- 1
-            }
+        if (genomeName %in% c("Tthymallus", "ThyArc1.0")) {
+            
+            message(paste("Retrieving local annotations for", genomeName))
+            cpg <- try(getCpGs(genome = genomeName), silent = FALSE)
+            genes <- try(getGenes(genome = genomeName), silent = FALSE)      
+            fail1 <- ifelse(is(cpg, "try-error"), 1, 0)
+            fail2 <- ifelse(is(genes, "try-error"), 1, 0)
+            
+        } else {
+            # 3. Standard annotatr Workflow (UCSC Genomes)
+            annot_CpG <- paste0(c(genomeName, "_cpgs"), collapse = "")
+            annot_genes <- paste0(c(genomeName, "_genes_cds"), collapse = "")
+            
         }
         
-        for (attempt in seq_len(5)) {
-            genes <- try(annotatr::build_annotations(genome = genomeName,
-                                            annotations = annot_genes), 
-                silent = TRUE)
-            if (!is(genes, "try-error")) {
-                message("Download of Gene annotation successful!")
-                fail2 <- 0
-                break
-            } else {
-                message(genes)
-                if (5 - attempt > 0)
-                  message("Trying again (", 5 - attempt, " attempts remaining)")
-                fail2 <- 1
-            }
-        }
-        
-
+        # 4. Processing and cleanup
         if (fail1 == 0 && fail2 == 0) {
-            # lift over hg19 coordinates to hg18 using annotationHub
-            if (!is.null(liftTo)){
-              ah = AnnotationHub()
-              chainfiles <- query(ah , c(genomeName, liftTo, "chainfile"))
-              cf <- which(grepl(paste0(genomeName, "To", liftTo), 
-                                chainfiles$title, 
-                                ignore.case=TRUE))
-              if (length(cf) == 0){
-                message("LiftOver from ", genomeName, " to ", liftTo, 
-                     " was unsucccessful")
-                return(NULL)
-              }else if(length(cf) > 1){
-                # take the first matching chain if more than one
-                cf <- cf[1]
-              }
-              
-              chain <- chainfiles[[names(chainfiles)[cf]]]
-              
-              cpg.new <- unlist(liftOver(cpg, chain))
-              genes.new <- unlist(liftOver(genes, chain))
-              
-              GenomeInfoDb::genome(cpg) <- liftTo
-              GenomeInfoDb::genome(genes) <- liftTo
-            }
-           
-            keep <- which(!is.na(genes$symbol))
-            genes <- genes[keep, ]
-            if(genomeName == "Dpulex"){
-            cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
-            } else if(genomeName == "Tthymallus"){
-            cpg$type <- substr(cpg$type, 12, nchar(cpg$type))
+            
+            # Custom substrate string cleanup for T. arcticus
+            if(genomeName %in% c("Dpulex", "Tthymallus", "ThyArc1.0")){
+                # but if it does, keep it:
+                # cpg$type <- substr(cpg$type, 1, nchar(cpg$type)) 
             } else {
-            cpg$type <- substr(cpg$type, 10, nchar(cpg$type))
+                cpg$type <- substr(cpg$type, 10, nchar(cpg$type))
             }
             
             annot <- GRangesList(CpGs = cpg, Exons = genes, compress=FALSE)
             return(annot)
         } else {
-            message("Download with annotatr::build_annotations() failed; Annotation could not be retrieved.")
+            message("Annotation retrieval failed.")
             return(NULL)
         }
     }
